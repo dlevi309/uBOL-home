@@ -21,7 +21,7 @@ cleanassets:
 safari-extension:
 	$(MAKE) -sC uBlock/ mv3-safari && \
 		rm -rf build/uBOLite.safari && \
-		cp -R uBlock/dist/build/uBOLite.safari build/
+		cp -RL uBlock/dist/build/uBOLite.safari build/
 
 safari-app: safari-extension
 	xcodebuild clean archive \
