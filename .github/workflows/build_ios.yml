@@ -30,6 +30,16 @@ jobs:
       - name: Build Safari extension assets
         run: make safari-extension
 
+      - name: Ensure iOS extension resources exist
+        run: |
+          test -d build/uBOLite.safari
+          if [ ! -f build/uBOLite.safari/zapper-ui.html ]; then
+            cp chromium/zapper-ui.html build/uBOLite.safari/zapper-ui.html
+          fi
+          if [ ! -d build/uBOLite.safari/web_accessible_resources ]; then
+            cp -R chromium/web_accessible_resources build/uBOLite.safari/web_accessible_resources
+          fi
+
       - name: Archive iOS app
         run: |
           rm -rf "$ARCHIVE_PATH" "$EXPORT_PATH"
