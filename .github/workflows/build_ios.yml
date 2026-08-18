@@ -62,6 +62,7 @@ jobs:
           key: ${{ env.IPA_CACHE_KEY }}
 
       - name: Summarize cache location
+        if: ${{ hashFiles('build/ios/uBOLite-ios.ipa') != '' }}
         run: |
           {
             echo "Built IPA: \`build/ios/uBOLite-ios.ipa\`"
