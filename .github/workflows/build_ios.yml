@@ -1,0 +1,70 @@
+name: uBO Lite iOS build
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios:
+    name: Build iOS IPA
+    runs-on: macos-latest
+    env:
+      ARCHIVE_PATH: ${{ github.workspace }}/build/ios/uBOLite-ios.xcarchive
+      EXPORT_PATH: ${{ github.workspace }}/build/ios/export
+      IPA_PATH: ${{ github.workspace }}/build/ios/uBOLite-ios.ipa
+      IPA_CACHE_KEY: ios-ipa-${{ github.sha }}-${{ github.run_id }}
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: package.json
+          cache: npm
+
+      - name: Build Safari extension assets
+        run: make safari-extension
+
+      - name: Archive iOS app
+        run: |
+          rm -rf "$ARCHIVE_PATH" "$EXPORT_PATH"
+          xcodebuild clean archive \
+            -configuration release \
+            -destination 'generic/platform=iOS' \
+            -project "dist/safari/xcode/uBlock Origin Lite.xcodeproj" \
+            -scheme "uBlock Origin Lite (iOS)" \
+            -archivePath "$ARCHIVE_PATH" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Package IPA
+        run: |
+          mkdir -p "$EXPORT_PATH/Payload"
+          APP_PATH=$(find "$ARCHIVE_PATH/Products/Applications" -maxdepth 1 -type d -name '*.app' -print -quit)
+          if [ -z "$APP_PATH" ]; then
+            echo "No .app bundle found in $ARCHIVE_PATH"
+            ls -la "$ARCHIVE_PATH/Products/Applications" || true
+            exit 1
+          fi
+          cp -R "$APP_PATH" "$EXPORT_PATH/Payload/"
+          ditto -c -k --sequesterRsrc --keepParent "$EXPORT_PATH/Payload" "$IPA_PATH"
+
+      - name: Save IPA to workflow cache
+        if: ${{ hashFiles('build/ios/uBOLite-ios.ipa') != '' }}
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.IPA_PATH }}
+          key: ${{ env.IPA_CACHE_KEY }}
+
+      - name: Summarize cache location
+        if: ${{ hashFiles('build/ios/uBOLite-ios.ipa') != '' }}
+        run: |
+          {
+            echo "Built IPA: \`build/ios/uBOLite-ios.ipa\`"
+            echo "Workflow cache key: \`${IPA_CACHE_KEY}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
