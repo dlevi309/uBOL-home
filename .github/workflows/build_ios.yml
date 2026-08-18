@@ -48,6 +48,7 @@ jobs:
           APP_PATH=$(find "$ARCHIVE_PATH/Products/Applications" -maxdepth 1 -type d -name '*.app' -print -quit)
           if [ -z "$APP_PATH" ]; then
             echo "No .app bundle found in $ARCHIVE_PATH"
+            ls -la "$ARCHIVE_PATH/Products/Applications" || true
             exit 1
           fi
           cp -R "$APP_PATH" "$EXPORT_PATH/Payload/"
@@ -57,7 +58,7 @@ jobs:
         if: ${{ hashFiles('build/ios/uBOLite-ios.ipa') != '' }}
         uses: actions/cache/save@v4
         with:
-          path: build/ios/uBOLite-ios.ipa
+          path: ${{ env.IPA_PATH }}
           key: ${{ env.IPA_CACHE_KEY }}
 
       - name: Summarize cache location
